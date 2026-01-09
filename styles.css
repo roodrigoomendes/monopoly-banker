@@ -717,6 +717,81 @@ input[type="number"] {
     font-size: 0.875rem;
 }
 
+/* Estado de prisão */
+.player-card.in-jail {
+    border-color: var(--warning);
+    position: relative;
+}
+
+.player-card.in-jail::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(245, 158, 11, 0.05) 10px,
+        rgba(245, 158, 11, 0.05) 20px
+    );
+    pointer-events: none;
+    z-index: 1;
+    border-radius: var(--radius-lg);
+}
+
+.jail-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--warning);
+    color: white;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 10;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.jail-indicator:hover {
+    background: #D97706;
+    transform: scale(1.05);
+}
+
+.jail-indicator i {
+    width: 12px;
+    height: 12px;
+}
+
+.player-avatar.jailed {
+    position: relative;
+}
+
+.player-avatar.jailed::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px dashed var(--warning);
+    border-radius: 50%;
+    animation: jailPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes jailPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 /* Header do card com cor do jogador */
 .player-card-header {
     padding: 16px;
@@ -2159,6 +2234,16 @@ input[type="number"] {
 .menu-item.menu-item-danger:hover {
     background: var(--danger-bg);
     border-color: var(--danger);
+}
+
+.menu-item.menu-item-warning {
+    color: var(--warning);
+    border-color: var(--warning-bg);
+}
+
+.menu-item.menu-item-warning:hover {
+    background: var(--warning-bg);
+    border-color: var(--warning);
 }
 
 .menu-divider {

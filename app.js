@@ -43,6 +43,10 @@ class MonopolyBanker {
         this.bankruptPlayer = null;
         this.bankruptCreditor = null;
         
+        // Jail state
+        this.jailFee = 50; // Taxa para sair da prisão
+        this.maxJailTurns = 3; // Máximo de turnos na prisão
+        
         this.init();
     }
     
@@ -144,7 +148,12 @@ class MonopolyBanker {
             const gameData = JSON.parse(savedGame);
             
             // Restaurar estado do jogo
-            this.players = gameData.players || [];
+            this.players = (gameData.players || []).map(p => ({
+                ...p,
+                inJail: p.inJail || false,
+                jailTurns: p.jailTurns || 0,
+                jailFreeCards: p.jailFreeCards || 0
+            }));
             this.properties = gameData.properties || JSON.parse(JSON.stringify(PROPERTIES));
             this.history = gameData.history || [];
             this.gameMode = gameData.gameMode || 'classic';
@@ -325,6 +334,10 @@ class MonopolyBanker {
             this.toggleSideMenu();
             this.showDeclareBankruptcyModal();
         });
+        document.getElementById('send-to-jail-btn').addEventListener('click', () => {
+            this.toggleSideMenu();
+            this.showSendToJailModal();
+        });
         document.getElementById('player-order-menu-btn').addEventListener('click', () => {
             this.toggleSideMenu();
             this.showPlayerOrderModal();
@@ -467,7 +480,9 @@ class MonopolyBanker {
             icon: isNoPiece ? '' : piece.emoji,
             noPiece: isNoPiece,
             order: this.players.length + 1,
-            jailFreeCards: 0
+            jailFreeCards: 0,
+            inJail: false,
+            jailTurns: 0
         };
         
         this.players.push(player);
@@ -898,13 +913,20 @@ class MonopolyBanker {
             const utilities = playerProps.filter(p => p.isUtility);
             
             return `
-                <div class="player-card ${player.isBankrupt ? 'bankrupt' : ''} ${this.selectedPlayer?.id === player.id ? 'selected' : ''}" 
+                <div class="player-card ${player.isBankrupt ? 'bankrupt' : ''} ${player.inJail ? 'in-jail' : ''} ${this.selectedPlayer?.id === player.id ? 'selected' : ''}" 
                      style="--player-color: ${player.color}"
                      data-player-id="${player.id}"
                      onclick="app.selectPlayerCard(${player.id})">
                     
+                    ${player.inJail ? `
+                        <div class="jail-indicator" onclick="event.stopPropagation(); app.showJailModal(${player.id})">
+                            <i data-lucide="lock"></i>
+                            <span>PRESO</span>
+                        </div>
+                    ` : ''}
+                    
                     <div class="player-card-header">
-                        <div class="player-avatar" style="background: ${player.color}">${this.getPlayerDisplay(player)}</div>
+                        <div class="player-avatar ${player.inJail ? 'jailed' : ''}" style="background: ${player.color}">${this.getPlayerDisplay(player)}</div>
                         <div class="player-info">
                             <div class="player-name">${player.name}</div>
                             <div class="player-order">${player.order}º jogador</div>
@@ -930,6 +952,12 @@ class MonopolyBanker {
                                 <div class="stat-item">
                                     <span class="stat-icon">💡</span>
                                     <span>${utilities.length}/2</span>
+                                </div>
+                            ` : ''}
+                            ${(player.jailFreeCards || 0) > 0 ? `
+                                <div class="stat-item">
+                                    <span class="stat-icon">🎫</span>
+                                    <span>${player.jailFreeCards} carta${player.jailFreeCards > 1 ? 's' : ''}</span>
                                 </div>
                             ` : ''}
                         </div>
@@ -2471,6 +2499,14 @@ class MonopolyBanker {
                 this.addToHistory('🔧', `${player.name}: Reparos`, -cost, player);
                 this.checkBankruptcy(player);
                 break;
+            case 'jail':
+                this.sendToJail(player);
+                break;
+            case 'getOutOfJail':
+                player.jailFreeCards = (player.jailFreeCards || 0) + 1;
+                this.addToHistory('🎫', `${player.name} ganhou uma carta de liberdade!`, null, player);
+                this.showToast(`${player.name} tem ${player.jailFreeCards} carta(s) de liberdade!`, 'success');
+                break;
             default:
                 this.addToHistory('🎴', `${player.name}: ${this.currentCard.text}`, null, player);
         }
@@ -2759,6 +2795,263 @@ class MonopolyBanker {
     animateMoney(id) {
         const el = document.getElementById(`balance-${id}`);
         if (el) { el.classList.add('money-changed'); setTimeout(() => el.classList.remove('money-changed'), 300); }
+    }
+    
+    // ==========================================
+    // JAIL - SISTEMA DE PRISÃO
+    // ==========================================
+    
+    sendToJail(player) {
+        player.inJail = true;
+        player.jailTurns = 0;
+        this.addToHistory('🔒', `${player.name} foi para a prisão!`, null, player);
+        this.showToast(`${player.name} está preso!`, 'warning');
+        this.renderPlayersCards();
+        this.autoSave();
+    }
+    
+    releaseFromJail(player, method = 'payment') {
+        player.inJail = false;
+        player.jailTurns = 0;
+        
+        let message = '';
+        switch (method) {
+            case 'payment':
+                message = `${player.name} pagou $${this.jailFee} de fiança`;
+                break;
+            case 'card':
+                message = `${player.name} usou carta de liberdade`;
+                break;
+            case 'doubles':
+                message = `${player.name} saiu com dados duplos!`;
+                break;
+            case 'turns':
+                message = `${player.name} completou 3 turnos na prisão`;
+                break;
+        }
+        
+        this.addToHistory('🔓', message, null, player);
+        this.showToast(`${player.name} saiu da prisão!`, 'success');
+        this.renderPlayersCards();
+        this.closeModal();
+        this.autoSave();
+    }
+    
+    payJailFee(playerId) {
+        const player = this.players.find(p => p.id === playerId);
+        if (!player) return;
+        
+        if (player.balance < this.jailFee) {
+            this.showToast('Saldo insuficiente para pagar a fiança!', 'danger');
+            return;
+        }
+        
+        player.balance -= this.jailFee;
+        this.releaseFromJail(player, 'payment');
+    }
+    
+    useJailFreeCard(playerId) {
+        const player = this.players.find(p => p.id === playerId);
+        if (!player) return;
+        
+        if ((player.jailFreeCards || 0) <= 0) {
+            this.showToast('Você não tem cartas de liberdade!', 'warning');
+            return;
+        }
+        
+        player.jailFreeCards--;
+        this.releaseFromJail(player, 'card');
+    }
+    
+    tryJailDiceRoll(playerId) {
+        const player = this.players.find(p => p.id === playerId);
+        if (!player) return;
+        
+        // Incrementar turno
+        player.jailTurns = (player.jailTurns || 0) + 1;
+        
+        // Rolar dados
+        const dice1 = Math.floor(Math.random() * 6) + 1;
+        const dice2 = Math.floor(Math.random() * 6) + 1;
+        const isDoubles = dice1 === dice2;
+        
+        this.lastDiceRoll = [dice1, dice2];
+        
+        // Mostrar resultado
+        const content = `
+            <div style="text-align: center;">
+                <div style="font-size: 4rem; margin-bottom: var(--space-5);">
+                    ${this.getDiceFace(dice1)} ${this.getDiceFace(dice2)}
+                </div>
+                <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-4);">
+                    Total: ${dice1 + dice2}
+                </div>
+                
+                ${isDoubles ? `
+                    <div style="background: var(--success-bg); color: var(--success); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5);">
+                        <i data-lucide="unlock" style="width: 32px; height: 32px; margin-bottom: var(--space-2);"></i>
+                        <p style="font-weight: 600; font-size: 1.1rem;">🎉 Dados Duplos!</p>
+                        <p>Você saiu da prisão!</p>
+                    </div>
+                ` : `
+                    <div style="background: var(--danger-bg); color: var(--danger); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5);">
+                        <i data-lucide="lock" style="width: 32px; height: 32px; margin-bottom: var(--space-2);"></i>
+                        <p style="font-weight: 600; font-size: 1.1rem;">Não foram dados duplos</p>
+                        <p>Turno ${player.jailTurns}/${this.maxJailTurns} na prisão</p>
+                    </div>
+                `}
+                
+                ${!isDoubles && player.jailTurns >= this.maxJailTurns ? `
+                    <div style="background: var(--warning-bg); color: var(--warning); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5);">
+                        <p style="font-weight: 600;">⚠️ Último turno!</p>
+                        <p>Você deve pagar $${this.jailFee} para sair.</p>
+                    </div>
+                ` : ''}
+                
+                <button class="btn btn-primary btn-full" onclick="app.handleJailDiceResult(${playerId}, ${isDoubles})">
+                    ${isDoubles ? '✅ Sair da Prisão' : '👍 OK'}
+                </button>
+            </div>
+        `;
+        
+        this.openModal('🎲 Tentativa de Fuga', content);
+        if (typeof lucide !== 'undefined') {
+            setTimeout(() => lucide.createIcons(), 10);
+        }
+    }
+    
+    handleJailDiceResult(playerId, isDoubles) {
+        const player = this.players.find(p => p.id === playerId);
+        if (!player) return;
+        
+        if (isDoubles) {
+            this.releaseFromJail(player, 'doubles');
+        } else if (player.jailTurns >= this.maxJailTurns) {
+            // Forçar pagamento após 3 turnos
+            if (player.balance >= this.jailFee) {
+                player.balance -= this.jailFee;
+                this.releaseFromJail(player, 'turns');
+            } else {
+                // Precisa vender propriedades ou falir
+                this.closeModal();
+                this.showToast('Você precisa pagar $50! Venda propriedades se necessário.', 'warning');
+                this.checkBankruptcy(player);
+            }
+        } else {
+            this.closeModal();
+            this.renderPlayersCards();
+            this.autoSave();
+        }
+    }
+    
+    showJailModal(playerId) {
+        const player = this.players.find(p => p.id === playerId);
+        if (!player || !player.inJail) return;
+        
+        const hasCard = (player.jailFreeCards || 0) > 0;
+        const canPayFee = player.balance >= this.jailFee;
+        const turnsLeft = this.maxJailTurns - (player.jailTurns || 0);
+        
+        const content = `
+            <div style="text-align: center;">
+                <div style="background: var(--bg-tertiary); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5);">
+                    <div class="player-avatar" style="background: ${player.color}; width: 64px; height: 64px; font-size: 1.5rem; margin: 0 auto var(--space-3);">
+                        ${this.getPlayerDisplay(player)}
+                    </div>
+                    <h3 style="margin-bottom: var(--space-2);">${player.name}</h3>
+                    <p style="color: var(--text-secondary);">Saldo: <strong>$${this.formatMoney(player.balance)}</strong></p>
+                </div>
+                
+                <div style="background: var(--danger-bg); color: var(--danger); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5);">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+                        <i data-lucide="lock" style="width: 24px; height: 24px;"></i>
+                        <span style="font-weight: 700; font-size: 1.1rem;">Na Prisão</span>
+                    </div>
+                    <p>Turno ${(player.jailTurns || 0) + 1} de ${this.maxJailTurns}</p>
+                    ${turnsLeft > 0 ? `<p style="font-size: 0.875rem; opacity: 0.8;">Restam ${turnsLeft} tentativa(s)</p>` : ''}
+                </div>
+                
+                <div class="jail-options" style="display: grid; gap: var(--space-3);">
+                    <button class="btn btn-warning btn-full" onclick="app.payJailFee(${playerId})" ${!canPayFee ? 'disabled' : ''}>
+                        <i data-lucide="banknote"></i>
+                        Pagar Fiança - $${this.jailFee}
+                    </button>
+                    
+                    ${hasCard ? `
+                        <button class="btn btn-success btn-full" onclick="app.useJailFreeCard(${playerId})">
+                            <i data-lucide="ticket"></i>
+                            Usar Carta de Liberdade (${player.jailFreeCards})
+                        </button>
+                    ` : ''}
+                    
+                    <button class="btn btn-primary btn-full" onclick="app.tryJailDiceRoll(${playerId})">
+                        <i data-lucide="dices"></i>
+                        Tentar Dados Duplos
+                    </button>
+                    
+                    <button class="btn btn-ghost btn-full" onclick="app.closeModal()">
+                        <i data-lucide="x"></i>
+                        Cancelar
+                    </button>
+                </div>
+                
+                <div style="margin-top: var(--space-5); padding: var(--space-4); background: var(--bg-tertiary); border-radius: var(--radius-md); text-align: left;">
+                    <p style="font-weight: 600; margin-bottom: var(--space-2); font-size: 0.875rem;">📋 Regras da Prisão:</p>
+                    <ul style="font-size: 0.8rem; color: var(--text-secondary); padding-left: var(--space-4); margin: 0;">
+                        <li>Pague $${this.jailFee} para sair imediatamente</li>
+                        <li>Use uma carta de liberdade se tiver</li>
+                        <li>Role dados duplos para sair grátis</li>
+                        <li>Após ${this.maxJailTurns} turnos, deve pagar a fiança</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        this.openModal('🔒 Prisão', content);
+        if (typeof lucide !== 'undefined') {
+            setTimeout(() => lucide.createIcons(), 10);
+        }
+    }
+    
+    // Ação manual para enviar jogador à prisão (via menu ou casa "Vá para prisão")
+    showSendToJailModal() {
+        const activePlayers = this.players.filter(p => !p.isBankrupt && !p.inJail);
+        
+        if (activePlayers.length === 0) {
+            this.showToast('Nenhum jogador disponível!', 'warning');
+            return;
+        }
+        
+        const content = `
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-5);">
+                Selecione o jogador que vai para a prisão:
+            </p>
+            
+            <div class="player-select-grid" id="jail-player-select">
+                ${activePlayers.map(player => `
+                    <div class="player-select-option" data-player-id="${player.id}" onclick="app.confirmSendToJail(${player.id})">
+                        <div class="player-avatar" style="background: ${player.color}">
+                            ${this.getPlayerDisplay(player)}
+                        </div>
+                        <span>${player.name}</span>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <button class="btn btn-ghost btn-full" style="margin-top: var(--space-4);" onclick="app.closeModal()">
+                Cancelar
+            </button>
+        `;
+        
+        this.openModal('🔒 Enviar para Prisão', content);
+    }
+    
+    confirmSendToJail(playerId) {
+        const player = this.players.find(p => p.id === playerId);
+        if (!player) return;
+        
+        this.closeModal();
+        this.sendToJail(player);
     }
     
     // ==========================================
