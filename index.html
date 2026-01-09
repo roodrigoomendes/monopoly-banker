@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#059669">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>🎩 Banqueiro Digital - Monopoly</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎩</text></svg>">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- ==================== SETUP SCREEN ==================== -->
+        <section id="setup-screen" class="screen active">
+            <div class="logo-container">
+                <div class="logo">
+                    <div class="logo-icon">🎩</div>
+                    <h1><span>BANQUEIRO</span><br>DIGITAL</h1>
+                    <p class="tagline">Monopoly Edition</p>
+                </div>
+            </div>
+            
+            <div class="setup-card">
+                <!-- Seleção de Modo de Jogo -->
+                <div class="game-mode-section">
+                    <h3>🎮 Modo de Jogo</h3>
+                    <div class="game-modes" id="game-modes">
+                        <div class="game-mode-option selected" data-mode="classic">
+                            <i data-lucide="crown"></i>
+                            <span class="mode-name">Clássico</span>
+                            <span class="mode-desc">$1.500 inicial</span>
+                        </div>
+                        <div class="game-mode-option" data-mode="quick">
+                            <i data-lucide="zap"></i>
+                            <span class="mode-name">Rápido</span>
+                            <span class="mode-desc">$1.000 inicial</span>
+                        </div>
+                        <div class="game-mode-option" data-mode="turbo">
+                            <i data-lucide="rocket"></i>
+                            <span class="mode-name">Turbo</span>
+                            <span class="mode-desc">$500 inicial</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setup-divider"></div>
+                
+                <h3>👥 Jogadores</h3>
+                <p class="setup-info">Adicione de 2 a 8 jogadores</p>
+                
+                <div id="players-list" class="players-setup-list"></div>
+                
+                <div class="add-player-form">
+                    <input type="text" id="player-name" placeholder="Nome do jogador" maxlength="15" autocomplete="off">
+                    
+                    <div class="form-section">
+                        <label>Escolha sua peça:</label>
+                        <div class="piece-picker" id="piece-picker"></div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <label>Cor:</label>
+                        <div class="color-picker" id="color-picker">
+                            <div class="color-option" data-color="#DC2626" style="background: #DC2626"></div>
+                            <div class="color-option" data-color="#2563EB" style="background: #2563EB"></div>
+                            <div class="color-option" data-color="#16A34A" style="background: #16A34A"></div>
+                            <div class="color-option" data-color="#D97706" style="background: #D97706"></div>
+                            <div class="color-option" data-color="#9333EA" style="background: #9333EA"></div>
+                            <div class="color-option" data-color="#0891B2" style="background: #0891B2"></div>
+                            <div class="color-option" data-color="#DB2777" style="background: #DB2777"></div>
+                            <div class="color-option" data-color="#475569" style="background: #475569"></div>
+                        </div>
+                    </div>
+                    
+                    <button id="add-player-btn" class="btn btn-secondary btn-full">
+                        <i data-lucide="plus"></i> Adicionar Jogador
+                    </button>
+                </div>
+                
+                <button id="start-game-btn" class="btn btn-primary btn-full btn-lg" disabled>
+                    <i data-lucide="play"></i> Iniciar Partida
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== GAME SCREEN ==================== -->
+        <section id="game-screen" class="screen">
+            <header class="game-header">
+                <div class="header-logo">🎩 Banqueiro</div>
+                <div class="header-actions">
+                    <button class="theme-toggle" id="theme-toggle" title="Alternar tema">
+                        <span class="icon-sun"><i data-lucide="sun"></i></span>
+                        <span class="icon-moon"><i data-lucide="moon"></i></span>
+                    </button>
+                    <button id="menu-btn" class="btn-icon" title="Menu">
+                        <i data-lucide="menu"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Ações Rápidas -->
+            <div class="quick-actions-bar">
+                <button class="quick-action-chip" data-action="transfer">
+                    <i data-lucide="arrow-left-right"></i>
+                    <span>Transferir</span>
+                </button>
+                <button class="quick-action-chip" data-action="pay-bank">
+                    <i data-lucide="landmark"></i>
+                    <span>Pagar</span>
+                </button>
+                <button class="quick-action-chip" data-action="receive-bank">
+                    <i data-lucide="wallet"></i>
+                    <span>Receber</span>
+                </button>
+                <button class="quick-action-chip" data-action="salary">
+                    <i data-lucide="banknote"></i>
+                    <span>Salário</span>
+                </button>
+                <button class="quick-action-chip" data-action="negotiate">
+                    <i data-lucide="handshake"></i>
+                    <span>Negociar</span>
+                </button>
+            </div>
+
+            <!-- Cards dos Jogadores -->
+            <div class="players-section">
+                <div id="players-cards" class="players-grid"></div>
+            </div>
+
+            <!-- FABs -->
+            <div class="fab-container">
+                <button class="fab fab-gold" data-action="auction" title="Leilão">
+                    <i data-lucide="gavel"></i>
+                </button>
+                <button class="fab fab-primary" data-action="dice" title="Dados">
+                    <i data-lucide="dices"></i>
+                </button>
+            </div>
+
+            <!-- Navegação Inferior -->
+            <nav class="bottom-nav">
+                <button class="nav-btn active" data-tab="players">
+                    <i data-lucide="users"></i>
+                    <span>Jogadores</span>
+                </button>
+                <button class="nav-btn" data-tab="properties">
+                    <i data-lucide="home"></i>
+                    <span>Propriedades</span>
+                </button>
+                <button class="nav-btn" data-tab="cards">
+                    <i data-lucide="layers"></i>
+                    <span>Cartas</span>
+                </button>
+                <button class="nav-btn" data-tab="history">
+                    <i data-lucide="scroll-text"></i>
+                    <span>Histórico</span>
+                </button>
+            </nav>
+        </section>
+
+        <!-- ==================== PROPERTIES SCREEN ==================== -->
+        <section id="properties-screen" class="screen">
+            <header class="game-header">
+                <button class="btn-icon back-btn" title="Voltar">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="header-title">Propriedades</div>
+                <button class="btn-icon" data-action="auction" title="Leilão">
+                    <i data-lucide="gavel"></i>
+                </button>
+            </header>
+            
+            <div class="properties-filters">
+                <button class="filter-btn active" data-filter="all">Todas</button>
+                <button class="filter-btn" data-filter="available">Disponíveis</button>
+                <button class="filter-btn" data-filter="owned">Com Dono</button>
+            </div>
+
+            <div id="properties-list" class="properties-grid"></div>
+        </section>
+
+        <!-- ==================== CARDS SCREEN ==================== -->
+        <section id="cards-screen" class="screen">
+            <header class="game-header">
+                <button class="btn-icon back-btn" title="Voltar">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="header-title">Cartas</div>
+                <div></div>
+            </header>
+
+            <div class="cards-container">
+                <div class="card-deck" id="chance-deck">
+                    <div class="deck-cover chance">
+                        <i data-lucide="help-circle" class="deck-icon-lucide"></i>
+                        <span class="deck-name">SORTE</span>
+                    </div>
+                    <button class="btn btn-primary">Tirar Carta</button>
+                </div>
+                
+                <div class="card-deck" id="chest-deck">
+                    <div class="deck-cover chest">
+                        <i data-lucide="gem" class="deck-icon-lucide"></i>
+                        <span class="deck-name">COFRE</span>
+                    </div>
+                    <button class="btn btn-primary">Tirar Carta</button>
+                </div>
+            </div>
+
+            <div id="drawn-card" class="drawn-card hidden"></div>
+        </section>
+
+        <!-- ==================== HISTORY SCREEN ==================== -->
+        <section id="history-screen" class="screen">
+            <header class="game-header">
+                <button class="btn-icon back-btn" title="Voltar">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="header-title">Histórico</div>
+                <div></div>
+            </header>
+
+            <div id="history-list" class="history-list"></div>
+        </section>
+
+        <!-- ==================== DICE SCREEN ==================== -->
+        <section id="dice-screen" class="screen">
+            <header class="game-header">
+                <button class="btn-icon back-btn" title="Voltar">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="header-title">Dados</div>
+                <div></div>
+            </header>
+
+            <div class="dice-container">
+                <div class="dice-options">
+                    <button class="dice-option-btn active" data-dice="1">1 Dado</button>
+                    <button class="dice-option-btn" data-dice="2">2 Dados</button>
+                </div>
+                
+                <div class="dice-wrapper" id="dice-wrapper">
+                    <div class="dice" id="dice-1">?</div>
+                    <div class="dice hidden" id="dice-2">?</div>
+                </div>
+                
+                <div class="dice-total" id="dice-total">
+                    <span>Toque para rolar</span>
+                </div>
+                
+                <div id="doubles-indicator" class="doubles-badge hidden">🎯 DUPLA!</div>
+                
+                <button class="btn btn-primary btn-lg" id="roll-dice-btn">
+                    <i data-lucide="dices"></i> Rolar Dados
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== BANKRUPTCY MODAL ==================== -->
+        <div id="bankruptcy-overlay" class="modal-overlay hidden">
+            <div class="modal bankruptcy-modal">
+                <div class="bankruptcy-content">
+                    <div class="bankruptcy-icon">💀</div>
+                    <h2>Jogador Faliu!</h2>
+                    <p id="bankruptcy-message"></p>
+                    <div id="bankruptcy-assets"></div>
+                    <p id="bankruptcy-question" style="margin-top: 16px; font-weight: 600; color: var(--text-primary);">
+                        Deseja confirmar a falência?
+                    </p>
+                    <div class="bankruptcy-buttons">
+                        <button class="btn btn-secondary btn-full" onclick="app.cancelBankruptcy()">
+                            <i data-lucide="x"></i> Não
+                        </button>
+                        <button class="btn btn-danger btn-full" onclick="app.confirmBankruptcy()">
+                            <i data-lucide="check"></i> Sim
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== MODAL ==================== -->
+        <div id="modal-overlay" class="modal-overlay hidden">
+            <div id="modal" class="modal">
+                <div class="modal-header">
+                    <h3 id="modal-title">Título</h3>
+                    <button class="modal-close"><i data-lucide="x"></i></button>
+                </div>
+                <div id="modal-content" class="modal-content"></div>
+            </div>
+        </div>
+
+        <!-- ==================== SIDE MENU ==================== -->
+        <div id="side-menu" class="side-menu hidden">
+            <div class="side-menu-content">
+                <h3><i data-lucide="settings"></i> Menu</h3>
+                <button class="menu-item" id="player-order-menu-btn">
+                    <i data-lucide="list-ordered"></i> Ordem dos Jogadores
+                </button>
+                <button class="menu-item" id="auction-menu-btn">
+                    <i data-lucide="gavel"></i> Iniciar Leilão
+                </button>
+                <button class="menu-item menu-item-danger" id="declare-bankruptcy-btn">
+                    <i data-lucide="skull"></i> Declarar Falência
+                </button>
+                <div class="menu-divider"></div>
+                <button class="menu-item" id="add-player-game-btn">
+                    <i data-lucide="user-plus"></i> Adicionar Jogador
+                </button>
+                <button class="menu-item" id="reset-money-btn">
+                    <i data-lucide="refresh-cw"></i> Resetar Dinheiro
+                </button>
+                <button class="menu-item" id="save-game-btn">
+                    <i data-lucide="save"></i> Salvar Partida
+                </button>
+                <button class="menu-item" id="rules-btn">
+                    <i data-lucide="book-open"></i> Regras
+                </button>
+                <button class="menu-item" id="new-game-btn">
+                    <i data-lucide="rotate-ccw"></i> Nova Partida
+                </button>
+                <div class="menu-divider"></div>
+                <div class="game-mode-badge" id="current-mode-badge">
+                    Modo: <strong>Clássico</strong>
+                </div>
+                <p class="menu-footer">Monopoly Banqueiro v5.0</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
