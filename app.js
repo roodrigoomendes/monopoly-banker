@@ -1411,8 +1411,12 @@ class MonopolyBanker {
         to.balance += amount;
         
         this.checkBankruptcy(from);
-        this.addToHistory('💸', `${from.name} → ${to.name}`, -amount, from);
-        this.addToHistory('💰', `${from.name} → ${to.name}`, amount, to);
+        this.addToHistory('💸', `${from.name} → ${to.name}`, -amount, from, {
+            type: 'transfer',
+            fromId: from.id,
+            toId: to.id,
+            amount: amount
+        });
         
         this.renderPlayersCards();
         this.closeModal();
@@ -1479,7 +1483,11 @@ class MonopolyBanker {
         player.balance -= amount;
         
         this.checkBankruptcy(player);
-        this.addToHistory('🏦', `${player.name}: ${reason}`, -amount, player);
+        this.addToHistory('🏦', `${player.name}: ${reason}`, -amount, player, {
+            type: 'pay',
+            playerId: player.id,
+            amount: amount
+        });
         this.renderPlayersCards();
         this.closeModal();
         this.showToast(`${player.name} pagou $${amount}`, 'success');
@@ -1541,7 +1549,11 @@ class MonopolyBanker {
         player.balance += amount;
         if (player.isBankrupt && player.balance > 0) player.isBankrupt = false;
         
-        this.addToHistory('💰', `${player.name}: ${reason}`, amount, player);
+        this.addToHistory('💰', `${player.name}: ${reason}`, amount, player, {
+            type: 'receive',
+            playerId: player.id,
+            amount: amount
+        });
         this.renderPlayersCards();
         this.closeModal();
         this.showToast(`${player.name} recebeu $${amount}`, 'success');
@@ -1552,7 +1564,11 @@ class MonopolyBanker {
         
         const salary = this.gameModeSettings.salary;
         this.selectedPlayer.balance += salary;
-        this.addToHistory('🚀', `${this.selectedPlayer.name}: Salário`, salary, this.selectedPlayer);
+        this.addToHistory('🚀', `${this.selectedPlayer.name}: Salário`, salary, this.selectedPlayer, {
+            type: 'salary',
+            playerId: this.selectedPlayer.id,
+            amount: salary
+        });
         this.renderPlayersCards();
         this.showToast(`${this.selectedPlayer.name} recebeu $${salary}!`, 'success');
     }
@@ -1991,7 +2007,12 @@ class MonopolyBanker {
         winner.balance -= this.auctionBid;
         winner.properties.push(this.auctionProperty.id);
         
-        this.addToHistory('🏆', `${winner.name} ganhou ${this.auctionProperty.name}`, -this.auctionBid, winner);
+        this.addToHistory('🏆', `${winner.name} ganhou ${this.auctionProperty.name}`, -this.auctionBid, winner, {
+            type: 'buyProperty',
+            playerId: winner.id,
+            propertyId: this.auctionProperty.id,
+            amount: this.auctionBid
+        });
         
         this.auctionActive = false;
         this.renderPlayersCards();
@@ -2186,7 +2207,12 @@ class MonopolyBanker {
         prop.houses = 0;
         
         this.checkBankruptcy(player);
-        this.addToHistory('🏠', `${player.name} comprou ${prop.name}`, -prop.price, player);
+        this.addToHistory('🏠', `${player.name} comprou ${prop.name}`, -prop.price, player, {
+            type: 'buyProperty',
+            playerId: player.id,
+            propertyId: propertyId,
+            amount: prop.price
+        });
         this.renderPlayersCards();
         this.renderProperties();
         this.closeModal();
@@ -2216,7 +2242,12 @@ class MonopolyBanker {
         
         const type = prop.houses === 5 ? 'hotel' : 'casa';
         this.checkBankruptcy(owner);
-        this.addToHistory('🏗️', `${owner.name}: ${type} em ${prop.name}`, -prop.houseCost, owner);
+        this.addToHistory('🏗️', `${owner.name}: ${type} em ${prop.name}`, -prop.houseCost, owner, {
+            type: 'buildHouse',
+            playerId: owner.id,
+            propertyId: propertyId,
+            amount: prop.houseCost
+        });
         this.renderPlayersCards();
         this.renderProperties();
         
@@ -2239,7 +2270,12 @@ class MonopolyBanker {
         if (owner.isBankrupt && owner.balance > 0) owner.isBankrupt = false;
         
         const type = prop.houses === 4 ? 'hotel' : 'casa';
-        this.addToHistory('💰', `${owner.name}: vendeu ${type} de ${prop.name}`, price, owner);
+        this.addToHistory('💰', `${owner.name}: vendeu ${type} de ${prop.name}`, price, owner, {
+            type: 'sellHouse',
+            playerId: owner.id,
+            propertyId: propertyId,
+            amount: price
+        });
         this.renderPlayersCards();
         this.renderProperties();
         
@@ -2260,7 +2296,12 @@ class MonopolyBanker {
             prop.houses = 0;
             if (owner.isBankrupt && owner.balance > 0) owner.isBankrupt = false;
             
-            this.addToHistory('🔄', `${owner.name} vendeu ${prop.name}`, price, owner);
+            this.addToHistory('🔄', `${owner.name} vendeu ${prop.name}`, price, owner, {
+                type: 'sellProperty',
+                playerId: owner.id,
+                propertyId: propertyId,
+                amount: price
+            });
             this.renderPlayersCards();
             this.renderProperties();
             this.closeModal();
@@ -2468,11 +2509,19 @@ class MonopolyBanker {
         switch (e.type) {
             case 'receive':
                 player.balance += e.amount;
-                this.addToHistory('🎴', `${player.name}: ${this.currentCard.text}`, e.amount, player);
+                this.addToHistory('🎴', `${player.name}: ${this.currentCard.text}`, e.amount, player, {
+                    type: 'card',
+                    playerId: player.id,
+                    amount: e.amount
+                });
                 break;
             case 'pay':
                 player.balance -= e.amount;
-                this.addToHistory('🎴', `${player.name}: ${this.currentCard.text}`, -e.amount, player);
+                this.addToHistory('🎴', `${player.name}: ${this.currentCard.text}`, -e.amount, player, {
+                    type: 'card',
+                    playerId: player.id,
+                    amount: -e.amount
+                });
                 this.checkBankruptcy(player);
                 break;
             case 'payEach':
@@ -2496,7 +2545,11 @@ class MonopolyBanker {
                     cost += prop.houses === 5 ? e.hotelCost : prop.houses * e.houseCost;
                 });
                 player.balance -= cost;
-                this.addToHistory('🔧', `${player.name}: Reparos`, -cost, player);
+                this.addToHistory('🔧', `${player.name}: Reparos`, -cost, player, {
+                    type: 'card',
+                    playerId: player.id,
+                    amount: -cost
+                });
                 this.checkBankruptcy(player);
                 break;
             case 'jail':
@@ -2561,12 +2614,154 @@ class MonopolyBanker {
     // HISTORY
     // ==========================================
     
-    addToHistory(icon, text, amount, player = null) {
-        this.history.unshift({ icon, text, amount, playerColor: player?.color, time: new Date() });
+    addToHistory(icon, text, amount, player = null, undoData = null) {
+        const historyId = Date.now() + Math.random().toString(36).substr(2, 9);
+        this.history.unshift({ 
+            id: historyId,
+            icon, 
+            text, 
+            amount, 
+            playerColor: player?.color,
+            playerId: player?.id,
+            time: new Date(),
+            undoData: undoData,
+            undone: false
+        });
         if (this.history.length > 100) this.history.pop();
         
         // Auto-save após cada ação
         this.autoSave();
+    }
+    
+    undoHistoryItem(historyId) {
+        const item = this.history.find(h => h.id === historyId);
+        if (!item || item.undone || !item.undoData) {
+            this.showToast('Não é possível desfazer esta ação', 'warning');
+            return;
+        }
+        
+        const undo = item.undoData;
+        
+        switch (undo.type) {
+            case 'transfer':
+                // Reverter transferência: devolver dinheiro
+                const from = this.players.find(p => p.id === undo.fromId);
+                const to = this.players.find(p => p.id === undo.toId);
+                if (from && to) {
+                    from.balance += undo.amount;
+                    to.balance -= undo.amount;
+                    if (from.isBankrupt && from.balance > 0) from.isBankrupt = false;
+                }
+                break;
+                
+            case 'pay':
+                // Reverter pagamento ao banco: devolver dinheiro
+                const payer = this.players.find(p => p.id === undo.playerId);
+                if (payer) {
+                    payer.balance += undo.amount;
+                    if (payer.isBankrupt && payer.balance > 0) payer.isBankrupt = false;
+                }
+                break;
+                
+            case 'receive':
+                // Reverter recebimento do banco: tirar dinheiro
+                const receiver = this.players.find(p => p.id === undo.playerId);
+                if (receiver) {
+                    receiver.balance -= undo.amount;
+                }
+                break;
+                
+            case 'salary':
+                // Reverter salário
+                const salaryPlayer = this.players.find(p => p.id === undo.playerId);
+                if (salaryPlayer) {
+                    salaryPlayer.balance -= undo.amount;
+                }
+                break;
+                
+            case 'buyProperty':
+                // Reverter compra: devolver dinheiro, remover propriedade
+                const buyer = this.players.find(p => p.id === undo.playerId);
+                const prop = this.properties.find(p => p.id === undo.propertyId);
+                if (buyer && prop) {
+                    buyer.balance += undo.amount;
+                    buyer.properties = buyer.properties.filter(id => id !== undo.propertyId);
+                    prop.houses = 0;
+                    if (buyer.isBankrupt && buyer.balance > 0) buyer.isBankrupt = false;
+                }
+                break;
+                
+            case 'buildHouse':
+                // Reverter construção: devolver dinheiro, remover casa
+                const builder = this.players.find(p => p.id === undo.playerId);
+                const buildProp = this.properties.find(p => p.id === undo.propertyId);
+                if (builder && buildProp && buildProp.houses > 0) {
+                    builder.balance += undo.amount;
+                    buildProp.houses--;
+                    if (builder.isBankrupt && builder.balance > 0) builder.isBankrupt = false;
+                }
+                break;
+                
+            case 'sellHouse':
+                // Reverter venda de casa: tirar dinheiro, adicionar casa
+                const seller = this.players.find(p => p.id === undo.playerId);
+                const sellProp = this.properties.find(p => p.id === undo.propertyId);
+                if (seller && sellProp) {
+                    seller.balance -= undo.amount;
+                    sellProp.houses = (sellProp.houses || 0) + 1;
+                }
+                break;
+                
+            case 'sellProperty':
+                // Reverter venda de propriedade: tirar dinheiro, devolver propriedade
+                const propSeller = this.players.find(p => p.id === undo.playerId);
+                const soldProp = this.properties.find(p => p.id === undo.propertyId);
+                if (propSeller && soldProp) {
+                    propSeller.balance -= undo.amount;
+                    propSeller.properties.push(undo.propertyId);
+                }
+                break;
+                
+            case 'card':
+                // Reverter efeito de carta
+                const cardPlayer = this.players.find(p => p.id === undo.playerId);
+                if (cardPlayer) {
+                    if (undo.amount > 0) {
+                        cardPlayer.balance -= undo.amount;
+                    } else {
+                        cardPlayer.balance += Math.abs(undo.amount);
+                        if (cardPlayer.isBankrupt && cardPlayer.balance > 0) cardPlayer.isBankrupt = false;
+                    }
+                }
+                break;
+                
+            default:
+                this.showToast('Tipo de ação não pode ser desfeita', 'warning');
+                return;
+        }
+        
+        // Marcar como desfeito
+        item.undone = true;
+        
+        // Adicionar registro de desfazer ao histórico
+        const player = this.players.find(p => p.id === item.playerId);
+        this.history.unshift({
+            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            icon: '↩️',
+            text: `Desfeito: ${item.text}`,
+            amount: item.amount ? -item.amount : null,
+            playerColor: item.playerColor,
+            playerId: item.playerId,
+            time: new Date(),
+            undoData: null,
+            undone: false
+        });
+        
+        this.renderPlayersCards();
+        this.renderProperties();
+        this.renderHistory();
+        this.autoSave();
+        this.showToast('Ação desfeita!', 'success');
     }
     
     renderHistory() {
@@ -2595,7 +2790,7 @@ class MonopolyBanker {
         }
         
         container.innerHTML = this.history.map(item => `
-            <div class="history-item">
+            <div class="history-item ${item.undone ? 'undone' : ''}">
                 <div class="history-icon" ${item.playerColor ? `style="background: ${item.playerColor}"` : ''}>
                     ${item.icon}
                 </div>
@@ -2608,8 +2803,17 @@ class MonopolyBanker {
                         ${item.amount >= 0 ? '+' : ''}$${Math.abs(item.amount)}
                     </div>
                 ` : ''}
+                ${item.undoData && !item.undone ? `
+                    <button class="history-undo-btn" onclick="app.undoHistoryItem('${item.id}')" title="Desfazer">
+                        <i data-lucide="undo-2"></i>
+                    </button>
+                ` : ''}
             </div>
         `).join('');
+        
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     }
     
     // ==========================================
