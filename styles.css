@@ -33,6 +33,7 @@
     --gold-bg: rgba(245, 158, 11, 0.12);
     
     --success: #10B981;
+    --success-bg: rgba(16, 185, 129, 0.1);
     --warning: #F59E0B;
     --warning-bg: rgba(245, 158, 11, 0.12);
     --danger: #EF4444;
@@ -2351,3 +2352,166 @@ input[type="number"] {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+
+/* ==========================================
+   JAIL MODAL - Estilo específico para prisão
+   ========================================== */
+
+.jail-modal-content {
+    padding: var(--space-4);
+}
+
+.jail-player-info {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    text-align: center;
+}
+
+.jail-player-info .player-avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+    margin: 0 auto var(--space-4);
+}
+
+.jail-player-info h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--space-2);
+}
+
+.jail-player-info .balance {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.jail-status-badge {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-md);
+    padding: var(--space-4) var(--space-5);
+    margin-top: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.jail-status-badge .status-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--danger);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.jail-status-badge .status-title svg {
+    width: 20px;
+    height: 20px;
+}
+
+.jail-status-badge .turns {
+    font-size: 1rem;
+    color: var(--danger);
+}
+
+.jail-status-badge .attempts {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    color: var(--danger);
+}
+
+.jail-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.jail-options .btn {
+    padding: var(--space-4) var(--space-5);
+    font-size: 1rem;
+}
+
+.jail-options .btn i {
+    width: 20px;
+    height: 20px;
+}
+
+.jail-rules {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+    text-align: left;
+}
+
+.jail-rules h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.jail-rules ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.jail-rules li {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    padding-left: var(--space-5);
+    position: relative;
+}
+
+.jail-rules li::before {
+    content: "•";
+    position: absolute;
+    left: var(--space-2);
+    color: var(--text-muted);
+}
+
+/* Dice result modal para prisão */
+.jail-dice-result {
+    padding: var(--space-4);
+    text-align: center;
+}
+
+.jail-dice-result .dice-display {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    margin: var(--space-5) 0;
+}
+
+.jail-dice-result .dice {
+    width: 72px;
+    height: 72px;
+    font-size: 2.5rem;
+}
+
+.jail-dice-result .result-message {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: var(--space-4) 0;
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+}
+
+.jail-dice-result .result-message.success {
+    background: var(--primary-bg);
+    color: var(--primary);
+}
+
+.jail-dice-result .result-message.fail {
+    background: var(--danger-bg);
+    color: var(--danger);
+}

@@ -2879,36 +2879,42 @@ class MonopolyBanker {
         
         // Mostrar resultado
         const content = `
-            <div style="text-align: center;">
-                <div style="font-size: 4rem; margin-bottom: var(--space-5);">
-                    ${this.getDiceFace(dice1)} ${this.getDiceFace(dice2)}
+            <div class="jail-dice-result">
+                <div class="dice-display">
+                    <div class="dice">${this.getDiceFace(dice1)}</div>
+                    <div class="dice">${this.getDiceFace(dice2)}</div>
                 </div>
-                <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-4);">
+                
+                <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: var(--space-5); color: var(--text-secondary);">
                     Total: ${dice1 + dice2}
                 </div>
                 
                 ${isDoubles ? `
-                    <div style="background: var(--success-bg); color: var(--success); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5);">
-                        <i data-lucide="unlock" style="width: 32px; height: 32px; margin-bottom: var(--space-2);"></i>
-                        <p style="font-weight: 600; font-size: 1.1rem;">🎉 Dados Duplos!</p>
-                        <p>Você saiu da prisão!</p>
+                    <div class="result-message success">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+                            <i data-lucide="unlock"></i>
+                            <span>🎉 Dados Duplos!</span>
+                        </div>
+                        <p style="font-size: 0.95rem; opacity: 0.9;">Você saiu da prisão!</p>
                     </div>
                 ` : `
-                    <div style="background: var(--danger-bg); color: var(--danger); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5);">
-                        <i data-lucide="lock" style="width: 32px; height: 32px; margin-bottom: var(--space-2);"></i>
-                        <p style="font-weight: 600; font-size: 1.1rem;">Não foram dados duplos</p>
-                        <p>Turno ${player.jailTurns}/${this.maxJailTurns} na prisão</p>
+                    <div class="result-message fail">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+                            <i data-lucide="lock"></i>
+                            <span>Não foram dados duplos</span>
+                        </div>
+                        <p style="font-size: 0.95rem; opacity: 0.9;">Turno ${player.jailTurns}/${this.maxJailTurns} na prisão</p>
                     </div>
                 `}
                 
                 ${!isDoubles && player.jailTurns >= this.maxJailTurns ? `
-                    <div style="background: var(--warning-bg); color: var(--warning); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5);">
-                        <p style="font-weight: 600;">⚠️ Último turno!</p>
-                        <p>Você deve pagar $${this.jailFee} para sair.</p>
+                    <div style="background: var(--warning-bg); color: var(--warning); padding: var(--space-5); border-radius: var(--radius-md); margin: var(--space-5) 0;">
+                        <p style="font-weight: 600; font-size: 1rem;">⚠️ Último turno!</p>
+                        <p style="font-size: 0.95rem;">Você deve pagar $${this.jailFee} para sair.</p>
                     </div>
                 ` : ''}
                 
-                <button class="btn btn-primary btn-full" onclick="app.handleJailDiceResult(${playerId}, ${isDoubles})">
+                <button class="btn btn-primary btn-full" style="margin-top: var(--space-5); padding: var(--space-4);" onclick="app.handleJailDiceResult(${playerId}, ${isDoubles})">
                     ${isDoubles ? '✅ Sair da Prisão' : '👍 OK'}
                 </button>
             </div>
@@ -2953,25 +2959,25 @@ class MonopolyBanker {
         const turnsLeft = this.maxJailTurns - (player.jailTurns || 0);
         
         const content = `
-            <div style="text-align: center;">
-                <div style="background: var(--bg-tertiary); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5);">
-                    <div class="player-avatar" style="background: ${player.color}; width: 64px; height: 64px; font-size: 1.5rem; margin: 0 auto var(--space-3);">
+            <div class="jail-modal-content">
+                <div class="jail-player-info">
+                    <div class="player-avatar" style="background: ${player.color};">
                         ${this.getPlayerDisplay(player)}
                     </div>
-                    <h3 style="margin-bottom: var(--space-2);">${player.name}</h3>
-                    <p style="color: var(--text-secondary);">Saldo: <strong>$${this.formatMoney(player.balance)}</strong></p>
-                </div>
-                
-                <div style="background: var(--danger-bg); color: var(--danger); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5);">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-bottom: var(--space-2);">
-                        <i data-lucide="lock" style="width: 24px; height: 24px;"></i>
-                        <span style="font-weight: 700; font-size: 1.1rem;">Na Prisão</span>
+                    <h3>${player.name}</h3>
+                    <p class="balance">Saldo: <strong>$${this.formatMoney(player.balance)}</strong></p>
+                    
+                    <div class="jail-status-badge">
+                        <div class="status-title">
+                            <i data-lucide="lock"></i>
+                            <span>Na Prisão</span>
+                        </div>
+                        <p class="turns">Turno ${(player.jailTurns || 0) + 1} de ${this.maxJailTurns}</p>
+                        ${turnsLeft > 0 ? `<p class="attempts">Restam ${turnsLeft} tentativa(s)</p>` : ''}
                     </div>
-                    <p>Turno ${(player.jailTurns || 0) + 1} de ${this.maxJailTurns}</p>
-                    ${turnsLeft > 0 ? `<p style="font-size: 0.875rem; opacity: 0.8;">Restam ${turnsLeft} tentativa(s)</p>` : ''}
                 </div>
                 
-                <div class="jail-options" style="display: grid; gap: var(--space-3);">
+                <div class="jail-options">
                     <button class="btn btn-warning btn-full" onclick="app.payJailFee(${playerId})" ${!canPayFee ? 'disabled' : ''}>
                         <i data-lucide="banknote"></i>
                         Pagar Fiança - $${this.jailFee}
@@ -2995,9 +3001,9 @@ class MonopolyBanker {
                     </button>
                 </div>
                 
-                <div style="margin-top: var(--space-5); padding: var(--space-4); background: var(--bg-tertiary); border-radius: var(--radius-md); text-align: left;">
-                    <p style="font-weight: 600; margin-bottom: var(--space-2); font-size: 0.875rem;">📋 Regras da Prisão:</p>
-                    <ul style="font-size: 0.8rem; color: var(--text-secondary); padding-left: var(--space-4); margin: 0;">
+                <div class="jail-rules">
+                    <h4>📋 Regras da Prisão</h4>
+                    <ul>
                         <li>Pague $${this.jailFee} para sair imediatamente</li>
                         <li>Use uma carta de liberdade se tiver</li>
                         <li>Role dados duplos para sair grátis</li>
